@@ -37,7 +37,7 @@ O projeto **Grêmio Brasileirão 2025** é uma aplicação web desenvolvida em R
 
 ## 3. Plano de Integração Contínua (CI) e Deploy
 
-O projeto possui dois workflows separados no GitHub Actions:
+O projeto possui dois workflows separados no GitHub Actions com execução sequencial:
 
 ### 3.1 Pipeline de CI (`.github/workflows/ci-cd.yml`)
 **Executado em**: Push e Pull requests para branch `main`
@@ -45,37 +45,46 @@ O projeto possui dois workflows separados no GitHub Actions:
 #### Job: lint-and-build
 - **Ambiente**: ubuntu-latest
 - **Node.js**: Versão 20 com cache npm
+- **Permissões**: `contents: read`, `packages: write`
 - **Etapas**:
-  1. Checkout do código (`actions/checkout@v3`)
-  2. Configuração do Node.js (`actions/setup-node@v3`)
-  3. Instalação de dependências (`npm install`)
+  1. Checkout do código (`actions/checkout@v4`)
+  2. Configuração do Node.js (`actions/setup-node@v4`)
+  3. Instalação de dependências (`npm ci`)
   4. Execução do linter (`npm run lint`)
   5. Build da aplicação (`npm run build`)
-  6. Login no GitHub Container Registry (`docker/login-action@v3`)
-  7. Build da imagem Docker (`docker build`)
-  8. Push da imagem para GHCR (`docker push`)
+  6. **Condicional** (apenas push na main):
+     - Setup Docker Buildx (`docker/setup-buildx-action@v3`)
+     - Login no GitHub Container Registry (`docker/login-action@v3`)
+     - Extração de metadata (`docker/metadata-action@v5`)
+     - Build e push da imagem Docker (`docker/build-push-action@v5`)
 
 ### 3.2 Pipeline de Deploy (`.github/workflows/deploy.yml`)
-**Executado em**: Push para branch `main` apenas
+**Executado em**: Após sucesso do workflow CI (via `workflow_run`)
 
 #### Job: deploy
 - **Ambiente**: ubuntu-latest
+- **Dependência**: CI workflow completado com sucesso
 - **Etapas**:
-  1. Checkout do código (`actions/checkout@v3`)
-  2. Configuração do Node.js (`actions/setup-node@v3`)
-  3. Login no GitHub Container Registry (`docker/login-action@v3`)
-  4. Deploy via SSH para EC2 (`appleboy/ssh-action@v0.1.5`)
+  1. Deploy via SSH para EC2 (`appleboy/ssh-action@v1.0.3`)
 
 #### Script de Deploy no Servidor:
 ```bash
 # Definir o diretório do projeto
 PROJECT_DIR="/home/ec2-user/gremio-brasileirao-2025"
 
-# Clone ou atualizar o repositório
+# Remover diretório se existir (deploy limpo a cada execução)
 if [ -d "$PROJECT_DIR" ]; then
-  cd "$PROJECT_DIR" && git pull origin main
-else
-  git clone https://github.com/repositorio.git "$PROJECT_DIR" && cd "$PROJECT_DIR"
+  rm -rf "$PROJECT_DIR"
+fi
+
+# Clone do repositório atualizado
+git clone https://github.com/pdelfino0/gremio-brasileiro-2025.git "$PROJECT_DIR"
+cd "$PROJECT_DIR"
+
+# Verificar se docker-compose.yml existe
+if [ ! -f "docker-compose.yml" ]; then
+  echo "❌ ERRO: docker-compose.yml não encontrado!"
+  exit 1
 fi
 
 # Login no GitHub Container Registry no servidor
@@ -86,6 +95,9 @@ docker compose down || true
 
 # Pull da imagem mais recente usando docker-compose
 docker compose pull
+
+# Cleanup de imagens antigas
+docker image prune -f
 
 # Iniciar com a nova imagem
 docker compose up -d
@@ -105,8 +117,11 @@ echo "Deploy realizado com sucesso em: $(date)"
 - **GitHub Actions**: Orquestração dos pipelines
 - **Node.js 20**: Runtime da aplicação
 - **ESLint**: Verificação de qualidade do código
+- **Docker Buildx**: Build multi-plataforma de imagens
+- **GitHub Container Registry (GHCR)**: Registry de imagens Docker
 - **Docker Compose**: Orquestração de containers no servidor
 - **SSH**: Deploy remoto na EC2
+- **Nginx**: Servidor web para aplicação React
 
 ## 4. Especificação da Infraestrutura Necessária
 
@@ -157,11 +172,35 @@ O `user_data` da EC2 instala automaticamente:
 - `terraform.tfvars`: Configurações específicas (não versionado)
 
 ### Segurança:
-- Acesso SSH restrito por IP
-- Security Group com regras específicas
-- Arquivo de configuração sensível (.tfvars) no .gitignore
+- Acesso SSH restrito por IP (configurável via `ssh_allowed_ips`)
+- Security Group com regras específicas para portas necessárias
+- Arquivos sensíveis (.tfvars, .tfstate) no .gitignore
 - Chaves SSH gerenciadas via AWS Key Pairs
+- Uso de secrets do GitHub Actions para informações sensíveis
+- Nginx configurado para aceitar qualquer host (produção)
+
+## 5. Status do Projeto
+
+### ✅ Funcionalidades Implementadas:
+- Pipeline CI/CD completo e funcional
+- Deploy automatizado via GitHub Actions
+- Infraestrutura AWS provisionada via Terraform
+- Aplicação containerizada com Docker
+- Servidor web Nginx configurado
+- Registry de imagens no GitHub Container Registry
+
+### 🔐 Segurança Validada:
+- Arquivos sensíveis removidos do controle de versão
+- Secrets configurados corretamente no GitHub Actions
+- Acesso restrito via Security Groups
+- Deploy com verificações de integridade
+
+### 🌐 Acesso à Aplicação:
+- **URL**: `http://IP_EC2:8080`
+- **Status**: Online e funcional
+- **Container**: `gremio-brasileirao-2025-app-1`
+- **Imagem**: `ghcr.io/pdelfino0/gremio-brasileiro-2025:latest`
 
 ---
 
-*Documentação gerada baseada na análise dos arquivos do repositório em: {{DATA_ATUAL}}* 
+*Documentação atualizada e validada em: Junho 2025* 

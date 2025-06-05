@@ -17,13 +17,11 @@ Para que o workflow do GitHub Actions funcione corretamente, você precisa confi
 3. Clique em **New repository secret**
 4. Adicione os seguintes secrets:
 
-| Nome do Secret | Descrição | Exemplo |
-|---------------|-----------|---------|
-| `AWS_ACCESS_KEY_ID` | ID da chave de acesso do usuário IAM | `AKIAIOSFODNN7EXAMPLE` |
-| `AWS_SECRET_ACCESS_KEY` | Chave de acesso secreta do usuário IAM | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
-| `EC2_HOST` | Endereço IP público ou DNS da instância EC2 | `ec2-12-345-67-89.compute-1.amazonaws.com` |
-| `EC2_USERNAME` | Nome de usuário para SSH na EC2 (geralmente ec2-user ou ubuntu) | `ec2-user` |
-| `EC2_SSH_KEY` | Chave SSH privada para acessar a instância EC2 | Conteúdo do arquivo de chave privada (`id_rsa`) |
+| Nome do Secret | Descrição |
+|---------------|-----------|
+| `EC2_HOST` | Endereço IP público da instância EC2 |
+| `EC2_USERNAME` | Nome de usuário para SSH (ec2-user) |
+| `EC2_SSH_KEY` | Chave SSH privada para acessar a instância EC2 |
 
 ## Configuração da EC2
 
