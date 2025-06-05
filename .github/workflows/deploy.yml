@@ -1,0 +1,54 @@
+name: Deploy to Production in AWS - Grêmio Brasileirão 2025
+
+# Definir os gatilhos para o workflow
+on:
+  push:
+    branches:
+      - main  # Deploy apenas quando houver push na main
+
+# Configuração das jobs do workflow
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Executa em uma máquina Ubuntu
+
+    steps:
+    # 1. Checar o código do repositório
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Configurar Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'  # Versão do Node.js do projeto
+
+    # 3. Login no GitHub Container Registry (para pull da imagem)
+    - name: Login no GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # 4. Fazer o deploy para o servidor via SSH
+    - name: Deploy to server via SSH
+      uses: appleboy/ssh-action@v0.1.5  # Action para SSH
+      with:
+        host: ${{ secrets.EC2_HOST }}  # Defina isso no repositório em Secrets
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}  # Defina a chave SSH no Secrets
+        port: 22
+        script: |
+          # Login no GitHub Container Registry no servidor
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Pull da imagem mais recente
+          docker pull ghcr.io/${{ github.repository }}:latest
+          
+          # Parar containers existentes
+          docker compose down || true
+          
+          # Iniciar com a nova imagem
+          docker compose up -d
+          
+          echo "Deploy realizado com sucesso em: $(date)" 

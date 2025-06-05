@@ -2,12 +2,11 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/pdelfino0/gremio-brasileirao-2025:latest
     ports:
       - "8080:80"
     restart: unless-stopped
-    # Volumes para desenvolvimento (opcional)
-    # volumes:
-    #   - ./dist:/usr/share/nginx/html 
+    # Para desenvolvimento local, descomente o build:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile 
