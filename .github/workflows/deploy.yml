@@ -22,14 +22,28 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         port: 22
         script: |
+          # Definir o diretório do projeto
+          PROJECT_DIR="/home/${{ secrets.EC2_USERNAME }}/gremio-brasileirao-2025"
+          
+          # Clone ou atualizar o repositório
+          if [ -d "$PROJECT_DIR" ]; then
+            echo "Repositório já existe, fazendo git pull..."
+            cd "$PROJECT_DIR"
+            git pull origin main
+          else
+            echo "Clonando repositório..."
+            git clone https://github.com/${{ github.repository }}.git "$PROJECT_DIR"
+            cd "$PROJECT_DIR"
+          fi
+          
           # Login no GitHub Container Registry no servidor
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          # Pull da imagem mais recente
-          docker pull ghcr.io/pdelfino0/gremio-brasileirao-2025:latest
-          
           # Parar containers existentes (sem falhar se não existirem)
           docker compose down 2>/dev/null || docker-compose down 2>/dev/null || true
+          
+          # Pull da imagem mais recente usando docker-compose
+          docker compose pull 2>/dev/null || docker-compose pull
           
           # Remover imagens antigas para economizar espaço
           docker image prune -f

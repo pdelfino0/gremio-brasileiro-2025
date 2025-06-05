@@ -68,17 +68,30 @@ O projeto possui dois workflows separados no GitHub Actions:
 
 #### Script de Deploy no Servidor:
 ```bash
+# Definir o diretório do projeto
+PROJECT_DIR="/home/ec2-user/gremio-brasileirao-2025"
+
+# Clone ou atualizar o repositório
+if [ -d "$PROJECT_DIR" ]; then
+  cd "$PROJECT_DIR" && git pull origin main
+else
+  git clone https://github.com/repositorio.git "$PROJECT_DIR" && cd "$PROJECT_DIR"
+fi
+
 # Login no GitHub Container Registry no servidor
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
-
-# Pull da imagem mais recente
-docker pull ghcr.io/pdelfino0/gremio-brasileirao-2025:latest
 
 # Parar containers existentes
 docker compose down || true
 
+# Pull da imagem mais recente usando docker-compose
+docker compose pull
+
 # Iniciar com a nova imagem
 docker compose up -d
+
+# Verificar containers rodando
+docker ps
 
 echo "Deploy realizado com sucesso em: $(date)"
 ```
