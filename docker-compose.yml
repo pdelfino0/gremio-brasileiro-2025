@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: ghcr.io/pdelfino0/gremio-brasileirao-2025:latest
+    image: ghcr.io/pdelfino0/gremio-brasileiro-2025:latest
     ports:
       - "8080:80"
     restart: unless-stopped

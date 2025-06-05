@@ -32,7 +32,7 @@ jobs:
           fi
           
           echo "Clonando repositório..."
-          git clone https://github.com/pdelfino0/gremio-brasileirao-2025.git "$PROJECT_DIR"
+          git clone https://github.com/pdelfino0/gremio-brasileiro-2025.git "$PROJECT_DIR"
           cd "$PROJECT_DIR"
           
           echo "Verificando conteúdo do diretório:"
