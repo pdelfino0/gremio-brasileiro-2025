@@ -25,16 +25,26 @@ jobs:
           # Definir o diretório do projeto
           PROJECT_DIR="/home/${{ secrets.EC2_USERNAME }}/gremio-brasileirao-2025"
           
-          # Clone ou atualizar o repositório
+          # Remover diretório se existir e estiver corrompido, depois fazer clone limpo
           if [ -d "$PROJECT_DIR" ]; then
-            echo "Repositório já existe, fazendo git pull..."
-            cd "$PROJECT_DIR"
-            git pull origin main
-          else
-            echo "Clonando repositório..."
-            git clone https://github.com/${{ github.repository }}.git "$PROJECT_DIR"
-            cd "$PROJECT_DIR"
+            echo "Removendo diretório existente..."
+            rm -rf "$PROJECT_DIR"
           fi
+          
+          echo "Clonando repositório..."
+          git clone https://github.com/pdelfino0/gremio-brasileirao-2025.git "$PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          
+          echo "Verificando conteúdo do diretório:"
+          ls -la
+          
+          # Verificar se docker-compose.yml existe
+          if [ ! -f "docker-compose.yml" ]; then
+            echo "❌ ERRO: docker-compose.yml não encontrado!"
+            exit 1
+          fi
+          
+          echo "✅ docker-compose.yml encontrado"
           
           # Login no GitHub Container Registry no servidor
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
