@@ -1,10 +1,53 @@
+version: '3.8'
+
 services:
-  app:
-    image: ghcr.io/pdelfino0/gremio-brasileiro-2025:latest
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
     restart: unless-stopped
-    # Para desenvolvimento local, descomente o build:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile 
+    depends_on:
+      - api
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://api:8000}
+    networks:
+      - gremio-network
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://gremio_user:gremio_password@postgres:5432/gremio_db}
+    networks:
+      - gremio-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: gremio-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-gremio_db}
+      - POSTGRES_USER=${POSTGRES_USER:-gremio_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-gremio_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - gremio-network
+
+volumes:
+  postgres_data:
+
+networks:
+  gremio-network:
+    driver: bridge 

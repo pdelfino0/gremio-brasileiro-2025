@@ -36,6 +36,28 @@ h1 {
   font-size: 2rem;
 }
 
+/* Loading and Error states */
+.loading, .error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.loading {
+  color: #005da8;
+}
+
+.error {
+  color: #d32f2f;
+  background-color: #ffebee;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d32f2f;
+}
+
 /* Tabs styling */
 .tabs {
   display: flex;
