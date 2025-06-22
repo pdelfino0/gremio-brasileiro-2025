@@ -1,0 +1,13 @@
+flowchart TD
+    A[Push para main] --> B[CI: Lint e Build]
+    B --> C[Criar Imagens Docker]
+    C --> D[Enviar para Registry]
+    D --> E[CD: Deploy na EC2]
+    E --> F[Baixar Imagens]
+    F --> G[Reiniciar Containers]
+    G --> H[Produção Atualizada]
+    
+    B -->|Falha| X[❌ Parar]
+    C -->|Falha| X
+    D -->|Falha| X
+    E -->|Falha| X
