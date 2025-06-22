@@ -2,23 +2,19 @@ version: '3.8'
 
 services:
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/pdelfino0/gremio-frontend:latest
     ports:
       - "8080:80"
     restart: unless-stopped
     depends_on:
       - api
     environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://api:8000}
+      - VITE_API_URL=${VITE_API_URL:-http://api:8000}
     networks:
       - gremio-network
 
   api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
+    image: ghcr.io/pdelfino0/gremio-api:latest
     ports:
       - "8000:8000"
     restart: unless-stopped
