@@ -67,12 +67,46 @@ jobs:
           
           echo "✅ docker-compose está disponível"
           
+          # Parar todos os containers que possam estar usando as portas
+          echo "Verificando containers existentes..."
+          docker ps -a --format "table {{.Names}}\t{{.Ports}}" | grep -E "(8080|8000|5432)" || true
+          
+          # Parar containers que possam estar usando as portas
+          echo "Parando containers que usam as portas necessárias..."
+          docker ps -q | xargs -r docker stop
+          
+          # Verificar e parar processos que possam estar usando as portas
+          echo "Verificando portas em uso..."
+          if command -v lsof &> /dev/null; then
+            if lsof -ti:8080 > /dev/null 2>&1; then
+              echo "Porta 8080 está em uso. Parando processo..."
+              lsof -ti:8080 | xargs kill -9
+            fi
+            
+            if lsof -ti:8000 > /dev/null 2>&1; then
+              echo "Porta 8000 está em uso. Parando processo..."
+              lsof -ti:8000 | xargs kill -9
+            fi
+            
+            if lsof -ti:5432 > /dev/null 2>&1; then
+              echo "Porta 5432 está em uso. Parando processo..."
+              lsof -ti:5432 | xargs kill -9
+            fi
+          fi
+          
+          # Parar nginx do sistema se estiver rodando
+          echo "Verificando se nginx do sistema está rodando..."
+          if systemctl is-active --quiet nginx; then
+            echo "Parando nginx do sistema..."
+            sudo systemctl stop nginx
+          fi
+          
           # Login no GitHub Container Registry no servidor
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          # Parar containers existentes (sem falhar se não existirem)
+          # Parar containers existentes e remover órfãos
           echo "Parando containers existentes..."
-          docker compose down 2>/dev/null || docker-compose down 2>/dev/null || true
+          docker compose down --remove-orphans 2>/dev/null || docker-compose down --remove-orphans 2>/dev/null || true
           
           # Remover imagens antigas para economizar espaço
           echo "Removendo imagens antigas..."
@@ -92,17 +126,19 @@ jobs:
           
           # Iniciar os containers
           echo "Iniciando containers..."
-          docker compose up -d 2>/dev/null || docker-compose up -d
+          docker compose up -d --remove-orphans 2>/dev/null || docker-compose up -d --remove-orphans
           
           # Verificar se o deploy foi bem-sucedido
           if [ $? -ne 0 ]; then
             echo "❌ ERRO: Falha ao iniciar containers!"
+            echo "Verificando logs de erro..."
+            docker compose logs 2>/dev/null || docker-compose logs
             exit 1
           fi
           
           # Aguardar um pouco para os containers inicializarem
           echo "Aguardando inicialização dos containers..."
-          sleep 10
+          sleep 15
           
           # Verificar se os containers estão rodando
           echo "Verificando status dos containers:"
@@ -123,6 +159,8 @@ jobs:
           if [ "$RUNNING_CONTAINERS" -lt 3 ]; then
             echo "❌ ERRO: Nem todos os containers estão rodando!"
             echo "Containers rodando: $RUNNING_CONTAINERS/3"
+            echo "Verificando logs de erro detalhados..."
+            docker compose logs 2>/dev/null || docker-compose logs
             exit 1
           fi
           

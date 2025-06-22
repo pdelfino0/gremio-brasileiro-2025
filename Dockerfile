@@ -1,6 +1,9 @@
 # Estágio de build
 FROM node:20-alpine as build
 
+# Definir argumento de build para a URL da API
+ARG VITE_API_URL=http://localhost:8000
+
 # Diretório de trabalho dentro do container
 WORKDIR /app
 
@@ -12,6 +15,9 @@ RUN npm ci
 
 # Copiar o código fonte
 COPY . .
+
+# Definir a variável de ambiente para o build
+ENV VITE_API_URL=$VITE_API_URL
 
 # Construir a aplicação
 RUN npm run build

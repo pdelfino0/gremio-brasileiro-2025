@@ -98,6 +98,8 @@ jobs:
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
+          build-args: |
+            VITE_API_URL=http://${{ secrets.EC2_HOST }}:8000
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
